@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <format>
 #include <print>
+#include <chrono>
 
 namespace FileTools {
 
@@ -56,9 +57,14 @@ void ReplacePointByCommaInPlace(std::filesystem::path const& thePath) {
 
 int main(void) {
    try {
-   std::filesystem::path file = std::filesystem::path { "e:" } / "Test" / "testdata_20000_rows.txt";
+      std::filesystem::path file = std::filesystem::path { "e:" } / "Test" / "testdata_20000_rows.txt";
+      auto const theStart = std::chrono::steady_clock::now();
       FileTools::ReplacePointByCommaInPlace(file);
-      std::println("file '{}' processed successfully", file.string());
+
+      auto const theEnd = std::chrono::steady_clock::now();
+      auto const flSeconds = std::chrono::duration<double> { theEnd - theStart };
+
+      std::println("Replacing decimal separators in '{}' took {:.6f} s.", file.string(), flSeconds.count());
       }
    catch (std::exception const& ex) {
       std::println("error while processing file: '{}'", ex.what());
