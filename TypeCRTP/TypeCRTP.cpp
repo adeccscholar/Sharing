@@ -130,7 +130,7 @@ void Print(ty const& obj) {
 
 
 template<printable_ty ty>
-void PrintOverString(ty const& obj) {
+void PrintWithToString(ty const& obj) {
    std::println("over: {}", obj.ToString());
    }
 
@@ -292,7 +292,7 @@ std::string ToStringAll(std::tuple<types_ty...> const& tplValues) {
 
 
 template <printable_ty... types_ty>
-class PrintTuple {
+class PrintableTuple {
 public:
    using tuple_ty = std::tuple<types_ty...>;
 private:
@@ -302,7 +302,7 @@ public:
    template <typename... Args>
       requires (sizeof...(Args) == sizeof...(types_ty)) &&
                std::constructible_from<tuple_ty, Args...>
-   PrintTuple(Args&&... args) : data { std::move(std::forward<Args>(args))...} { }
+   PrintableTuple(Args&&... args) : data { std::move(std::forward<Args>(args))... } { }
 
    std::string ToString() const { return ToStringAll(data); }
    void Print() const { PrintAll(data); }
@@ -384,8 +384,8 @@ int main(void) {
       //std::string testStr = ToStringAll(test);
       //std::println("{}", testStr);
 
-      PrintTuple< UserCRTP, OrderCRTP, ValueCRTP> tt { UserCRTP { "Volker" }, OrderCRTP { 42 }, ValueCRTP { 3.1415 } };
-      PrintOverString(tt);
+      PrintableTuple<UserCRTP, OrderCRTP, ValueCRTP> tt { UserCRTP { "Volker" }, OrderCRTP { 42 }, ValueCRTP { 3.1415 } };
+      PrintWithToString(tt);
 
 
    }

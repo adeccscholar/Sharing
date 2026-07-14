@@ -26,7 +26,7 @@ private:
       virtual std::type_info const& Type() const noexcept = 0;
       virtual void* Ptr() noexcept = 0;
       virtual void const* Ptr() const noexcept = 0;
-      virtual std::unique_ptr<Concept> Clone() const = 0;
+     // virtual std::unique_ptr<Concept> Clone() const = 0;
       };
 
    template<printable_ty ty>
@@ -69,6 +69,8 @@ public:
       return *this;
       }
    */
+   AnyPrintable(AnyPrintable const& aOther) = delete;
+
 
    AnyPrintable(AnyPrintable&&) noexcept = default;
    AnyPrintable& operator=(AnyPrintable&&) noexcept = default;
