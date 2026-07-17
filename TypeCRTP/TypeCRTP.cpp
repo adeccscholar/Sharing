@@ -28,15 +28,63 @@ public:
    void Rename(std::string strNewName) { strName = std::move(strNewName); }
 };
 
-class UserVirt : public User, public PrintBase {
+class Order {
+private:
+   int iId{};
+
+public:
+   Order() = default;
+   Order(Order const&) = default;
+   Order(Order&&) noexcept = default;
+   Order(int iNewVal) : iId{ iNewVal } {}
+
+   int Id() const { return iId; }
+   void SetId(int iNewId) { iId = iNewId; }
+};
+
+
+class UserVirt : virtual public PrintBase, public User {
 public:
    //using User::User;
    explicit UserVirt(std::string strNewName) : User(std::move(strNewName)) { }
 
    // virtuelle Methode aus Basis
-   std::string ToString() const override { return std::format("virtual: {}", Name()); }
+   std::string ToString() const override { return std::format("virtual User: {}", Name()); }
 };
 
+
+class OrderVirt : virtual public PrintBase, public Order {
+public:
+   explicit OrderVirt(int iNewVal) : Order(iNewVal) {}
+
+   std::string ToString() const override { return std::format("virtual Order: {}", Id()); }
+};
+
+
+class UserWithOrderVirt : public UserVirt, public OrderVirt {
+public:
+   UserWithOrderVirt(std::string strNewName, int iNewVal) : UserVirt(std::move(strNewName)), OrderVirt{ iNewVal } { }
+
+   std::string ToString() const override { return std::format("virtual User with Order: {} / {}", 
+                                                         //UserVirt::ToString(), OrderVirt::ToString() ); 
+                                                           Name(), Id() );
+                                          }
+
+};
+
+
+class UserWithTwoOrderVirt : public UserVirt, public OrderVirt, public Order {
+public:
+   UserWithTwoOrderVirt(std::string strNewName, int iNewVal1, int iNewVal2) : UserVirt(std::move(strNewName)), 
+      OrderVirt{ iNewVal1 }, Order { iNewVal2 } {}
+
+   std::string ToString() const override {
+      return std::format("virtual User with Order: {} / {} + {}",
+         //UserVirt::ToString(), OrderVirt::ToString() ); 
+         Name(), OrderVirt::Id(), Order::Id());
+   }
+
+};
 
 // --------------------------------------------------------------------------------
 
@@ -81,17 +129,13 @@ concept user_ty = requires(ty const& const_obj, ty & obj, std::string str) {
 };
 
 
-class OrderCRTP final : public Printable_Base<OrderCRTP> {
-private:
-   int iId{};
 
+
+class OrderCRTP final : public Order, public Printable_Base<OrderCRTP> {
 public:
-   explicit OrderCRTP(int iNewId) : iId(iNewId) {}
+   explicit OrderCRTP(int iNewId) : Order(iNewId) {}
 
-   std::string ToStringImpl() const { return std::format("OrderCRTP: {}", iId); }
-
-   int Id() const { return iId; }
-   void SetId(int iNewId) { iId = iNewId; }
+   std::string ToStringImpl() const { return std::format("OrderCRTP: {}", Id()); }
 };
 
 template <typename ty>
@@ -180,7 +224,25 @@ void ProcessOne(std::any const& val, fn_ty&& fn ) {
       }
    }
 
+class PrintableView {
+private:
+   void const* pObject;
+   std::string(*fnToString)(void const*);
 
+public:
+   template <printable_ty ty>
+   PrintableView(ty const& aObject) noexcept : pObject{ std::addressof(aObject) },
+      fnToString{ [](void const* pValue) { return static_cast<ty const*>(pValue)->ToString(); } } {
+   }
+
+   [[nodiscard]] std::string ToString() const {
+      return fnToString(pObject);
+   }
+
+   void Print() const {
+      std::println("Printable View {}", ToString());
+   }
+};
 
 
 struct printable_visitor {
@@ -315,6 +377,14 @@ int main(void) {
    UserVirt  vUser { "virtual Name" };
    vUser.Print();
 
+   UserWithOrderVirt user_with_order{ "virtual Name", 42 };
+   user_with_order.Print();
+   
+
+   UserWithTwoOrderVirt user_with_2order{ "virtual Name", 42, 53 };
+   user_with_2order.Print();
+   // -----------------------
+
    UserCRTP  aUser { "Volker" };
    OrderCRTP aOrder { 42 };
    ValueCRTP aValue { 3.1415 };
@@ -330,7 +400,13 @@ int main(void) {
   // bewusster Fehler für static_assert
   // Test aTest { "Test" };
   // Work(aTest);
-  
+
+   std::println("----- view");
+   std::vector<PrintableView> vecPrintView { aUser, aOrder, aValue, vUser };
+   for (PrintableView const& aView : vecPrintView) {
+      std::println("{}", aView.ToString());
+      }
+
 
    {
       std::println("-----");
